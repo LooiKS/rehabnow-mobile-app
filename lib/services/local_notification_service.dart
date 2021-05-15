@@ -1,0 +1,3 @@
+class LocalNotificationService {
+  LocalNotificationService() {}
+}

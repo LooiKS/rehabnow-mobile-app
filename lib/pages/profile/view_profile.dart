@@ -98,7 +98,12 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                       loadingBuilder: (context, child, progress) =>
                           progress == null
                               ? child
-                              : Image.asset('assets/images/loading.gif'),
+                              : CircularProgressIndicator(
+                                  value: progress.expectedTotalBytes == null
+                                      ? null
+                                      : progress.cumulativeBytesLoaded /
+                                          progress.expectedTotalBytes,
+                                ),
                       image: NetworkImage(
                           'https://flutter.github.io/assets-for-api-docs/assets/widgets/owl.jpg'),
                       width: 100,

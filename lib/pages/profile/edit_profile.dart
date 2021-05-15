@@ -126,8 +126,19 @@ class _ProfileEditState extends State<ProfileEdit>
                     ClipRRect(
                       borderRadius: BorderRadius.circular(100),
                       child: Stack(
+                        alignment: Alignment.center,
                         children: [
                           Image(
+                            loadingBuilder: (context, child, progress) =>
+                                progress == null
+                                    ? child
+                                    : CircularProgressIndicator(
+                                        value: progress.expectedTotalBytes ==
+                                                null
+                                            ? null
+                                            : progress.cumulativeBytesLoaded /
+                                                progress.expectedTotalBytes,
+                                      ),
                             image: image == null
                                 ? NetworkImage(
                                     'https://flutter.github.io/assets-for-api-docs/assets/widgets/owl.jpg')

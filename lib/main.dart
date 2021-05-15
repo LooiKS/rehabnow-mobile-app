@@ -4,20 +4,31 @@ import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
+import 'package:rehabnow_app/pages/cases/view_cases.dart';
+import 'package:rehabnow_app/pages/connection/connection.dart';
+import 'package:rehabnow_app/pages/exercises/exercises.dart';
 import 'package:rehabnow_app/pages/profile/view_profile.dart';
 import 'package:rehabnow_app/pages/reminder/view_reminder.dart';
 import 'package:rehabnow_app/shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 void main() async {
   // RehabnowSharedPreferences preferences;
   WidgetsFlutterBinding.ensureInitialized();
-  print("main");
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  tz.initializeTimeZones();
+
+  print(await FlutterNativeTimezone.getLocalTimezone());
+  tz.setLocalLocation(
+      tz.getLocation(await FlutterNativeTimezone.getLocalTimezone()));
 // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
   const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('logo');
+      AndroidInitializationSettings('@mipmap/ic_launcher');
 
   final IOSInitializationSettings initializationSettingsIOS =
       IOSInitializationSettings(
@@ -31,19 +42,13 @@ void main() async {
       iOS: initializationSettingsIOS,
       macOS: initializationSettingsMacOS);
 
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings,
-      onSelectNotification: selectNotification);
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onSelectNotification: selectNotification,
+  );
   SharedPreferences.getInstance()
       .then((value) => RehabnowSharedPreferences.sharedPreferences = value);
-  const AndroidNotificationDetails androidPlatformChannelSpecifics =
-      AndroidNotificationDetails(
-          'your channel id', 'your channel name', 'your channel description',
-          importance: Importance.max, priority: Priority.high, showWhen: false);
-  const NotificationDetails platformChannelSpecifics =
-      NotificationDetails(android: androidPlatformChannelSpecifics);
-  await flutterLocalNotificationsPlugin.show(
-      0, 'plain title', 'plain body', platformChannelSpecifics,
-      payload: 'item x');
+
   runApp(MyApp());
 }
 
@@ -54,9 +59,7 @@ Future selectNotification(String payload) async {
 }
 
 Future onDidReceiveLocalNotification(
-    int i, String s1, String s2, String s3) async {
-  print("");
-}
+    int i, String s1, String s2, String s3) async {}
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -398,25 +401,40 @@ class _MainPageState extends State<MainPage>
       Icons.exit_to_app,
     ];
     List<Function> drawerFunctions = [
-      () => {},
-      () => {},
-      () => {},
-      () => {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => ViewReminder()))
-          },
-      () => {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (context) => Profile()))
-          },
       () {
+        Navigator.pop(context);
+        Navigator.push(
+            context, MaterialPageRoute(builder: (context) => ViewCases()));
+      },
+      () {
+        Navigator.pop(context);
+        Navigator.push(
+            context, MaterialPageRoute(builder: (context) => Connection()));
+      },
+      () {
+        Navigator.pop(context);
+        Navigator.push(
+            context, MaterialPageRoute(builder: (context) => Exercises()));
+      },
+      () {
+        Navigator.pop(context);
+        Navigator.push(
+            context, MaterialPageRoute(builder: (context) => ViewReminder()));
+      },
+      () {
+        Navigator.pop(context);
+        Navigator.push(
+            context, MaterialPageRoute(builder: (context) => Profile()));
+      },
+      () {
+        Navigator.pop(context);
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (context) => MyApp()));
       }
     ];
     return Scaffold(
-        appBar: RehabnowAppBar(
-          title: "Home",
+        appBar: AppBar(
+          title: Text("Home"),
         ),
         drawer: Drawer(
           child: SafeArea(
@@ -424,9 +442,19 @@ class _MainPageState extends State<MainPage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Text("RehabNow"),
+                Padding(padding: EdgeInsets.all(10)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset("assets/images/logo.png"),
+                    Text(
+                      "RehabNow",
+                      style: TextStyle(fontSize: 25),
+                    ),
+                  ],
+                ),
                 Padding(
-                  padding: EdgeInsets.all(10),
+                  padding: EdgeInsets.all(5),
                 ),
                 Flexible(
                   child: ListView.separated(
@@ -435,9 +463,11 @@ class _MainPageState extends State<MainPage>
                           title: Text('${drawers[index]}'),
                           leading: Icon(drawerIcons[index]),
                           onTap: drawerFunctions[index],
+                          contentPadding:
+                              EdgeInsets.symmetric(vertical: 5, horizontal: 16),
                         );
                       },
-                      separatorBuilder: (context, index) => Divider(),
+                      separatorBuilder: (context, index) => Divider(height: 0),
                       itemCount: drawers.length),
                 )
               ],

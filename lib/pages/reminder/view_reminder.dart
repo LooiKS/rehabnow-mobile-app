@@ -2,8 +2,10 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:rehabnow_app/shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class ViewReminder extends StatefulWidget {
   @override
@@ -23,15 +25,25 @@ class _ViewReminderState extends State<ViewReminder> {
   get quote => _quotes[index];
   RehabnowSharedPreferences rsp = RehabnowSharedPreferences();
   bool _reminder;
-  String _reminderTime;
+  TimeOfDay _reminderTime;
   @override
   void initState() {
     super.initState();
-    _reminder = rsp.reminder;
-    _reminderTime = rsp.reminderTime;
+    _reminder = rsp.reminder == null ? false : rsp.reminder;
+    String reminderTime = rsp.reminderTime;
+    List<String> reminderTimes =
+        reminderTime == null ? null : reminderTime.split(":");
+    _reminderTime = reminderTime != null
+        ? TimeOfDay(
+            hour: int.parse(reminderTimes[0]),
+            minute: int.parse(reminderTimes[1]))
+        : TimeOfDay(hour: 12, minute: 0);
     Random _random = Random();
     index = _random.nextInt(_quotes.length);
   }
+
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   @override
   Widget build(BuildContext context) {
@@ -58,16 +70,25 @@ class _ViewReminderState extends State<ViewReminder> {
                             bottomRight: Radius.circular(100))),
                     color: Colors.lightBlueAccent)),
             Container(
-              child: ListTile(
-                leading: Icon(Icons.alarm),
-                title: Text("Enable Reminder"),
-                trailing: Switch(
-                  value: _reminder,
-                  onChanged: (value) {
-                    setState(() => _reminder = value);
-                    rsp.reminder = value;
-                  },
-                ),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: Icon(Icons.alarm),
+                    title: Text("Enable Reminder"),
+                    trailing: Switch(
+                      value: _reminder,
+                      onChanged: (value) {
+                        setState(() => _reminder = value);
+                        rsp.reminder = value;
+                        if (!value) {
+                          flutterLocalNotificationsPlugin.cancel(0);
+                        } else {
+                          scheduleNotification(_reminderTime);
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
             Divider(
@@ -80,7 +101,8 @@ class _ViewReminderState extends State<ViewReminder> {
               child: InkWell(
                 child: TextField(
                   enabled: false,
-                  controller: new TextEditingController(text: _reminderTime),
+                  controller: new TextEditingController(
+                      text: _reminderTime.format(context)),
                   decoration: InputDecoration(
                     labelText: "Reminder Time",
                     suffixIcon: Icon(Icons.access_time),
@@ -90,11 +112,13 @@ class _ViewReminderState extends State<ViewReminder> {
                 onTap: () async {
                   if (_reminder) {
                     TimeOfDay time = await showTimePicker(
-                        context: context, initialTime: TimeOfDay.now());
+                        context: context, initialTime: _reminderTime);
                     if (time != null) {
-                      rsp.reminderTime = time.format(context);
+                      rsp.reminderTime = "${time.hour}:${time.minute}";
+                      print(rsp.reminderTime);
+                      scheduleNotification(time);
                       setState(() {
-                        _reminderTime = time.format(context);
+                        _reminderTime = time;
                       });
                     }
                   } else {
@@ -109,5 +133,33 @@ class _ViewReminderState extends State<ViewReminder> {
         ),
       ),
     );
+  }
+
+  scheduleNotification(TimeOfDay time) {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails('rehabenow_id', 'rehabnow', 'rehabnow',
+            importance: Importance.max,
+            priority: Priority.high,
+            showWhen: true);
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+    DateTime now = DateTime.now();
+    int day = now.compareTo(DateTime(
+                now.year, now.month, now.day, time.hour, time.minute)) <
+            0
+        ? now.day
+        : now.day + 1;
+
+    flutterLocalNotificationsPlugin.zonedSchedule(
+        0,
+        "Rehabilitation Reminder",
+        "Check out your rehabilitation exercises now!",
+        tz.TZDateTime(
+            tz.local, now.year, now.month, day, time.hour, time.minute),
+        platformChannelSpecifics,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        androidAllowWhileIdle: true,
+        matchDateTimeComponents: DateTimeComponents.time);
   }
 }
