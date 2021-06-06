@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rehabnow_app/main.dart';
+import 'package:rehabnow_app/utils/loading.dart';
 
 const double MOUNTAIN_WIDTH = 125;
 
@@ -38,16 +40,34 @@ class VirtualRect {
 }
 
 class SkipTheHurdlesGame extends StatefulWidget {
+  final Stream<double>? stream;
+  final Null Function() onSaved;
+  final int oscillation;
+  final int target;
+  final bool pause;
+  final Null Function() onPaused;
+  final Null Function() onResume;
+
+  const SkipTheHurdlesGame({
+    Key? key,
+    this.stream,
+    required this.onSaved,
+    required this.oscillation,
+    required this.target,
+    required this.pause,
+    required this.onPaused,
+    required this.onResume,
+  }) : super(key: key);
   @override
   _SkipTheHurdlesGameState createState() => _SkipTheHurdlesGameState();
 }
 
 class _SkipTheHurdlesGameState extends State<SkipTheHurdlesGame> {
-  double lowerMountainX = 50.0,
+  double lowerMountainX = 250.0,
       lowerMountainY = 0.0,
       lowerMountainHeight = 250,
       lowerOpacity = 1.0;
-  double upperMountainX = 550.0,
+  double upperMountainX = 750.0,
       upperMountainY = 0.0,
       upperMountainHeight = 350,
       upperOpacity = 1.0;
@@ -56,13 +76,26 @@ class _SkipTheHurdlesGameState extends State<SkipTheHurdlesGame> {
 
   // screen
   double height = 0, width = 0;
-  Timer timer;
+  late Timer timer;
   String state = "";
-  int collide = 0;
+  int collide = 0, oscillation = 0;
+  bool reachTop = false;
+
+  StreamSubscription<double>? ss;
+
+  bool isPaused = false;
 
   @override
   void initState() {
     super.initState();
+    ss = widget.stream?.listen((event) {
+      if (!widget.pause) {
+        setState(() {
+          birdY = (event + 90) / 180 * (height - 50);
+        });
+      }
+    });
+
     timer = Timer.periodic(Duration(milliseconds: 100), (timer) {
       VirtualRect bottomMountain = VirtualRect(
           lowerMountainX + MOUNTAIN_WIDTH / 4,
@@ -70,40 +103,61 @@ class _SkipTheHurdlesGameState extends State<SkipTheHurdlesGame> {
           MOUNTAIN_WIDTH / 2,
           lowerMountainHeight);
       VirtualRect topMountain = VirtualRect(upperMountainX + MOUNTAIN_WIDTH / 4,
-          upperMountainY, MOUNTAIN_WIDTH / 2, upperMountainHeight);
+          upperMountainY, MOUNTAIN_WIDTH / 2, upperMountainHeight - 50);
       VirtualRect bird = VirtualRect(birdX, birdY, 50, 50);
 
       print(
           "${bird.right} >= ${bottomMountain.left} && ${bird.right} <= ${bottomMountain.right} && ${bird.bottom} >= ${bottomMountain.top} && ${bird.bottom} <= ${bottomMountain.bottom}");
 
-      if (bird.isCollide(bottomMountain) && lowerOpacity == 1.0) {
-        collide++;
-        print("Crash bottom mountain");
-        lowerOpacity -= 0.1;
+      if (!widget.pause && !isPaused) {
+        if (widget.target - widget.oscillation == 0) {
+          isPaused = true;
+          widget.onPaused();
+          showAlertDialog(
+              context: context,
+              title: "Exercise Done",
+              content:
+                  "Congratulations! You completed an exercise. Do you still want to continue?",
+              // barrierDismissible: false,
+              confirmCallback: () {
+                Navigator.of(context).pop();
+                widget.onResume();
+              },
+              cancelCallback: () {
+                Navigator.of(context).pop();
+                widget.onSaved();
+              });
+        } else {
+          if (bird.isCollide(bottomMountain) && lowerOpacity == 1.0) {
+            collide++;
+            print("Crash bottom mountain");
+            lowerOpacity -= 0.1;
+          }
+
+          if (bird.isCollide(topMountain) && upperOpacity == 1.0) {
+            collide++;
+            print("Crash mountain");
+            upperOpacity -= 0.1;
+          }
+
+          setState(() {
+            if (lowerOpacity != 1.0) {
+              lowerOpacity -= 0.1;
+            }
+            if (upperOpacity != 1.0) {
+              upperOpacity -= 0.1;
+            }
+            if (lowerMountainX < -(MOUNTAIN_WIDTH + 500)) {
+              lowerMountainX = width;
+              upperMountainX = width + 500;
+              lowerOpacity = upperOpacity = 1.0;
+            }
+
+            lowerMountainX -= 10;
+            upperMountainX -= 10;
+          });
+        }
       }
-
-      if (bird.isCollide(topMountain) && upperOpacity == 1.0) {
-        collide++;
-        print("Crash mountain");
-        upperOpacity -= 0.1;
-      }
-
-      setState(() {
-        if (lowerOpacity != 1.0) {
-          lowerOpacity -= 0.1;
-        }
-        if (upperOpacity != 1.0) {
-          upperOpacity -= 0.1;
-        }
-        if (lowerMountainX < -(MOUNTAIN_WIDTH + 500)) {
-          lowerMountainX = width;
-          upperMountainX = width + 500;
-          lowerOpacity = upperOpacity = 1.0;
-        }
-
-        lowerMountainX -= 10;
-        upperMountainX -= 10;
-      });
     });
   }
 
@@ -112,11 +166,12 @@ class _SkipTheHurdlesGameState extends State<SkipTheHurdlesGame> {
     // TODO: implement dispose
     super.dispose();
     timer.cancel();
+    ss?.cancel();
   }
 
   @override
   Widget build(BuildContext context) {
-    height = MediaQuery.of(context).size.height - 80;
+    height = MediaQuery.of(context).size.height;
     width = MediaQuery.of(context).size.width;
 
     lowerMountainHeight = height * 0.8;
@@ -126,58 +181,112 @@ class _SkipTheHurdlesGameState extends State<SkipTheHurdlesGame> {
     // print(AppBarTheme.of(context));
 
     return Scaffold(
+      backgroundColor: Colors.blueAccent,
       appBar: AppBar(
-        title: Text("Collision: $collide"),
-        actions: [ElevatedButton(onPressed: () => {}, child: Text("Stop"))],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+        title: Text(
+            "Collision: $collide  | Target: ${widget.target} | \nOscillation: ${widget.oscillation}"),
+        centerTitle: false,
+        automaticallyImplyLeading: false,
+        actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton(
-                child: Text("UP ${birdY}"),
-                onPressed: () {
-                  print(
-                      "Bird: Left: 25, Top: ${birdY + 20}, Right: ${25 + 50}, Bottom: ${birdY + 20 + 50}");
-                  double y = 0;
-                  // if (mx > -(mountainWidth / 2 - 45)) {
-                  //   y = (mountainHeight / (mountainWidth / 2)) * (45) +
-                  //       (mountainHeight /
-                  //           (mountainWidth / 2) *
-                  //           -(mx)); // y2 = 1.25 * -mx
-                  //   state = birdY > y ? "safe" : "crash";
-                  // } else {
-                  //   y = (mountainHeight / -(mountainWidth / 2)) * (45) +
-                  //       (mountainHeight /
-                  //           -(mountainWidth / 2) *
-                  //           -(mx +
-                  //               (mountainWidth / 2) +
-                  //               45)); // y2 = 1.25 * -mx
-                  // }
-                  setState(() {
-                    birdY = birdY - 1 < -500 ? birdY : birdY - 10;
-                    state = birdY > y ? "safe" : "crash";
-                    print(state);
-                  });
-                }),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-                child: Text("DOWN $height"),
-                onPressed: () {
-                  double y = 0;
-                  setState(() {
-                    birdY = birdY > height ? birdY : birdY + 10;
-                    state = birdY > y ? "safe" : "crash";
-                    print(state);
-                  });
-                }),
+              onPressed: () {
+                widget.onPaused();
+                setState(() {
+                  // isPaused = true;
+                });
+                showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => AlertDialog(
+                          title: Text("Confirmation"),
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 20),
+                          content: Text("Confirm to quit the exercise?"),
+                          actions: [
+                            FlatButton(
+                              child: Text(
+                                "Cancel",
+                                style: TextStyle(color: Colors.black),
+                              ),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                widget.onResume();
+                                setState(() {
+                                  // isPaused = false;
+                                });
+                              },
+                              color: Colors.yellow,
+                            ),
+                            ElevatedButton(
+                              child: Text("Yes"),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                widget.onSaved();
+                              },
+                            ),
+                          ],
+                        ));
+                // Navigator.of(context).pop();
+              },
+              child: Text("STOP"),
+              style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(Colors.red)),
+            ),
           ),
         ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
+      // floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
+      // floatingActionButton: Row(
+      //   mainAxisAlignment: MainAxisAlignment.center,
+      //   children: [
+      //     Padding(
+      //       padding: const EdgeInsets.all(8.0),
+      //       child: ElevatedButton(
+      //           child: Text("UP ${birdY}"),
+      //           onPressed: () {
+      //             print(
+      //                 "Bird: Left: 25, Top: ${birdY + 20}, Right: ${25 + 50}, Bottom: ${birdY + 20 + 50}");
+      //             double y = 0;
+      //             // if (mx > -(mountainWidth / 2 - 45)) {
+      //             //   y = (mountainHeight / (mountainWidth / 2)) * (45) +
+      //             //       (mountainHeight /
+      //             //           (mountainWidth / 2) *
+      //             //           -(mx)); // y2 = 1.25 * -mx
+      //             //   state = birdY > y ? "safe" : "crash";
+      //             // } else {
+      //             //   y = (mountainHeight / -(mountainWidth / 2)) * (45) +
+      //             //       (mountainHeight /
+      //             //           -(mountainWidth / 2) *
+      //             //           -(mx +
+      //             //               (mountainWidth / 2) +
+      //             //               45)); // y2 = 1.25 * -mx
+      //             // }
+      //             setState(() {
+      //               birdY = birdY - 1 < -500 ? birdY : birdY - 10;
+      //               state = birdY > y ? "safe" : "crash";
+      //               print(state);
+      //             });
+      //           }),
+      //     ),
+      //     Padding(
+      //       padding: const EdgeInsets.all(8.0),
+      //       child: ElevatedButton(
+      //           child: Text("DOWN $height"),
+      //           onPressed: () {
+      //             double y = 0;
+      //             setState(() {
+      //               birdY = birdY > height ? birdY : birdY + 10;
+      //               state = birdY > y ? "safe" : "crash";
+      //               print(state);
+      //             });
+      //           }),
+      //     ),
+      //   ],
+      // ),
       body: Container(
         child: Stack(
           children: [
@@ -187,7 +296,7 @@ class _SkipTheHurdlesGameState extends State<SkipTheHurdlesGame> {
               child: Container(
                 width: 50,
                 height: 50,
-                color: Colors.amber,
+                // color: Colors.amber,
               ),
             ),
             Positioned(
@@ -265,7 +374,7 @@ class MyPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // print(size.width);
-    Paint paint = Paint()..color = Colors.green;
+    Paint paint = Paint()..color = Colors.greenAccent;
 
     double w = size.width * 0.5;
     double h = w * 0.8;

@@ -4,54 +4,95 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:rehabnow_app/main.dart';
+import 'package:rehabnow_app/utils/loading.dart';
 
 enum BugState { UPWARDS, DOWNWARDS }
 
-class Game extends StatefulWidget {
+class CatchTheBug extends StatefulWidget {
+  final Stream<double>? stream;
+  final Null Function() onSaved;
+  final bool pause;
+  final Null Function() onPaused;
+  final Null Function() onResume;
+  final int oscillation;
+  final int target;
+
+  const CatchTheBug({
+    Key? key,
+    this.stream,
+    required this.onSaved,
+    required this.pause,
+    required this.onPaused,
+    required this.onResume,
+    required this.oscillation,
+    required this.target,
+  }) : super(key: key);
   @override
   _GameState createState() => _GameState();
 }
 
-class _GameState extends State<Game> {
-  int posX = 200, posY = 0, score = 0, escaped = 0, oscillation = 10;
-  Timer timer;
+class _GameState extends State<CatchTheBug> {
+  int posX = 200, posY = 0, score = 0, escaped = 0, oscillation = 0;
+  late Timer timer;
   double height = 0, width = 0, trashY = 50;
   BugState bugState = BugState.UPWARDS;
   bool isPaused = false;
-  BuildContext _context;
+  late BuildContext _context;
+
+  bool reachTop = false;
+  Stream<double> streamOrientation() async* {
+    while (true) {
+      await Future.delayed(Duration(milliseconds: 500));
+      yield Random().nextInt(180) - 90;
+    }
+  }
+
+  StreamSubscription<double>? ss;
 
   @override
   void initState() {
     super.initState();
+    isPaused = widget.pause;
+    // ss?.cancel();
+    ss = widget.stream?.listen((event) {
+      // print(event);
+      if (!widget.pause) {
+        setState(() {
+          trashY = (event + 90) / 180 * (height - 50);
+        });
+      }
+    });
     timer = Timer.periodic(Duration(milliseconds: 25), (x) {
-      if (!isPaused) {
-        if (oscillation == 0) {
+      print(widget.pause);
+      if (!widget.pause && !isPaused) {
+        if (widget.target - widget.oscillation == 0) {
           isPaused = true;
+          widget.onPaused();
           // WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-          showDialog(
+          print("trigger dialog");
+          showAlertDialog(
               context: _context,
-              barrierDismissible: false,
-              builder: (_) => AlertDialog(
-                    title: Text("Exercise Done"),
-                    content:
-                        Text("Congratulations! You completed an exercise."),
-                    actions: [
-                      ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            Navigator.of(context).pop();
-                          },
-                          child: Text("OK"))
-                    ],
-                  ));
+              title: "Exercise Done",
+              content:
+                  "Congratulations! You completed an exercise. Do you still want to continue?",
+              // barrierDismissible: false,
+              confirmCallback: () {
+                Navigator.of(context).pop();
+                widget.onResume();
+              },
+              cancelCallback: () {
+                Navigator.of(context).pop();
+                widget.onSaved();
+              });
           // });
         } else
           setState(() {
             posX -= 10;
             if (posX < 30) {
               posX = width.toInt();
-              print(trashY);
-              print(posY);
+              // print(trashY);
+              // print(posY);
               if ((trashY - posY).abs() <= 20)
                 score++;
               else
@@ -65,10 +106,10 @@ class _GameState extends State<Game> {
                   break;
               }
 
-              if (posY > height) {
+              if (posY > height - 30) {
                 posY = height.toInt();
                 bugState = BugState.UPWARDS;
-                oscillation--;
+                // oscillation--;
               } else if (posY < 0) {
                 posY = 0;
                 bugState = BugState.DOWNWARDS;
@@ -83,6 +124,7 @@ class _GameState extends State<Game> {
   void dispose() {
     super.dispose();
     timer.cancel();
+    ss?.cancel();
   }
 
   @override
@@ -90,21 +132,25 @@ class _GameState extends State<Game> {
     _context = context;
     Size screen = MediaQuery.of(context).size;
     double iconSize = 30; //IconTheme.of(context).size;
-    height = screen.height - 56 - iconSize * 2;
+    height = screen.height - 80;
     width = screen.width - iconSize;
     int layers = height ~/ iconSize;
 
     return Scaffold(
+      backgroundColor: Colors.blueAccent,
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton(
               onPressed: () {
-                setState(() {
-                  isPaused = true;
-                });
+                widget.onPaused();
+                // setState(() {
+                //   isPaused = true;
+                // });
                 showDialog(
                     context: context,
                     barrierDismissible: false,
@@ -121,9 +167,11 @@ class _GameState extends State<Game> {
                               ),
                               onPressed: () {
                                 Navigator.pop(context);
-                                setState(() {
-                                  isPaused = false;
-                                });
+                                widget.onResume();
+
+                                // setState(() {
+                                //   isPaused = false;
+                                // });
                               },
                               color: Colors.yellow,
                             ),
@@ -131,7 +179,8 @@ class _GameState extends State<Game> {
                               child: Text("Yes"),
                               onPressed: () {
                                 Navigator.pop(context);
-                                Navigator.pop(context);
+                                // Navigator.pop(context);
+                                widget.onSaved();
                               },
                             ),
                           ],
@@ -150,22 +199,25 @@ class _GameState extends State<Game> {
             Column(
               children: [
                 Text(
-                  "Excaped ",
+                  "Caught ",
                   style: TextStyle(fontSize: 13),
                 ),
                 Row(
-                  children: [Icon(Icons.bug_report), Text("x $escaped")],
+                  children: [Icon(Icons.bug_report), Text("x $score")],
                 ),
               ],
             ),
             Column(
               children: [
                 Text(
-                  "Caught ",
+                  "Target ",
                   style: TextStyle(fontSize: 13),
                 ),
                 Row(
-                  children: [Icon(Icons.bug_report), Text("x $score")],
+                  children: [
+                    Icon(Icons.bug_report),
+                    Text("x ${widget.target}")
+                  ],
                 ),
               ],
             ),
@@ -178,7 +230,7 @@ class _GameState extends State<Game> {
                 Row(
                   children: [
                     Icon(Icons.rotate_left_outlined),
-                    Text("x $oscillation")
+                    Text("x ${widget.oscillation}")
                   ],
                 ),
               ],
@@ -186,28 +238,30 @@ class _GameState extends State<Game> {
           ],
         ),
       ),
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-                child: Text("U P"),
-                onPressed: () {
-                  setState(() => trashY = trashY - 5 > 0 ? trashY - 5 : trashY);
-                }),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-                child: Text("D O W N ${posX}"),
-                onPressed: () {
-                  setState(() =>
-                      trashY = trashY + 20 < height ? trashY + 10 : trashY);
-                }),
-          ),
-        ],
-      ),
+      // floatingActionButton: Row(
+      //   mainAxisAlignment: MainAxisAlignment.center,
+      //   children: [
+      //     Padding(
+      //       padding: const EdgeInsets.all(8.0),
+      //       child: ElevatedButton(
+      //           child: Text("U P"),
+      //           onPressed: () {
+      //             // ss?.cancel();
+
+      //             setState(() => trashY = trashY - 5 > 0 ? trashY - 5 : trashY);
+      //           }),
+      //     ),
+      //     Padding(
+      //       padding: const EdgeInsets.all(8.0),
+      //       child: ElevatedButton(
+      //           child: Text("D O W N ${posX}"),
+      //           onPressed: () {
+      //             setState(() =>
+      //                 trashY = trashY + 20 < height ? trashY + 10 : trashY);
+      //           }),
+      //     ),
+      //   ],
+      // ),
       body: Container(
         child: Stack(
           children: [
@@ -234,7 +288,7 @@ class _GameState extends State<Game> {
                     // color: Colors.amber,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.amber,
+                      color: Colors.lime,
                     ),
                   ),
                 ))

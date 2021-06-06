@@ -1,6 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rehabnow_app/components/skeleton.dart';
+import 'package:rehabnow_app/models/case.model.dart';
 import 'package:rehabnow_app/pages/cases/view_case.dart';
+import 'package:rehabnow_app/services/case.http.service.dart';
+import 'package:intl/intl.dart' show DateFormat;
 
 class ViewCases extends StatefulWidget {
   @override
@@ -8,50 +12,91 @@ class ViewCases extends StatefulWidget {
 }
 
 class _ViewCasesState extends State<ViewCases> {
+  List<Case> _cases = [], _filteredCases = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    getAllCases().then((cases) => setState(() {
+          _cases = _filteredCases = cases;
+          _isLoading = false;
+        }));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text("Cases"),
-          centerTitle: true,
-        ),
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 200,
-                  child: DropdownButtonFormField(
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      prefixIcon: Icon(Icons.filter_alt_outlined),
-                    ),
-                    items: ["Recovered", "Under treatment"]
-                        .map((e) => DropdownMenuItem(
-                              child: Text(e),
-                              value: e,
-                            ))
-                        .toList(),
-                    value: "Recovered",
-                    onChanged: (e) => {},
+      appBar: AppBar(
+        title: Text("Cases"),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+          child: Skeleton(
+        isLoading: _isLoading,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Container(
+                width: 200,
+                child: DropdownButtonFormField(
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    prefixIcon: Icon(Icons.filter_alt_outlined),
                   ),
+                  items: ["All", "Recovered", "Under Treatment"]
+                      .map((e) => DropdownMenuItem(
+                            child: Text(e),
+                            value: e,
+                          ))
+                      .toList(),
+                  value: "All",
+                  onChanged: (e) {
+                    setState(() {
+                      _filteredCases = _cases
+                          .where((element) => e == "All" || element.status == e)
+                          .toList();
+                    });
+                  },
                 ),
-                Container(),
-                _CaseCard(),
-                _CaseCard(),
-                _CaseCard(),
-              ],
-            ),
+              ),
+              Container(),
+              if (_filteredCases.isEmpty)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      width: MediaQuery.of(context).size.width,
+                      child: Text(
+                        "No case found.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                ..._filteredCases
+                    .map((e) => _CaseCard(
+                          caseObj: e,
+                        ))
+                    .toList(),
+            ],
           ),
-        ));
+        ),
+      )),
+    );
   }
 }
 
 class _CaseCard extends StatelessWidget {
+  final Case caseObj;
   const _CaseCard({
-    Key key,
+    Key? key,
+    required this.caseObj,
   }) : super(key: key);
 
   @override
@@ -68,23 +113,31 @@ class _CaseCard extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 5),
                     child: Text(
-                      "Fell Down",
+                      caseObj.name ?? "-",
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                     ),
                   ),
-                  _CaseInfo(title: "Description", value: "desc"),
-                  _CaseInfo(title: "Created By", value: "desc"),
-                  _CaseInfo(title: "Created On", value: "desc"),
-                  _CaseInfo(title: "Status", value: "desc"),
+                  _CaseInfo(
+                      title: "Description", value: caseObj.description ?? "-"),
+                  _CaseInfo(
+                      title: "Created By", value: caseObj.createdBy ?? "-"),
+                  _CaseInfo(
+                      title: "Created On",
+                      value: DateFormat("dd-MM-yyyy").format(
+                          DateTime.fromMillisecondsSinceEpoch(
+                              caseObj.createdDt))),
+                  _CaseInfo(title: "Status", value: caseObj.status ?? "-"),
                 ],
               ),
             ),
             IconButton(
               icon: Icon(Icons.keyboard_arrow_right),
               onPressed: () {
-                Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (context) => ViewCase()));
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => ViewCase(
+                          caseObj: caseObj,
+                        )));
               },
             )
           ],
@@ -98,7 +151,8 @@ class _CaseCard extends StatelessWidget {
 class _CaseInfo extends StatelessWidget {
   final String title;
   final String value;
-  const _CaseInfo({Key key, this.title, this.value}) : super(key: key);
+  const _CaseInfo({Key? key, required this.title, required this.value})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {

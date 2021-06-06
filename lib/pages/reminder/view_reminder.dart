@@ -3,8 +3,7 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:rehabnow_app/shared_preferences/shared_preferences.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rehabnow_app/utils/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class ViewReminder extends StatefulWidget {
@@ -24,16 +23,16 @@ class _ViewReminderState extends State<ViewReminder> {
   int index = 0;
   get quote => _quotes[index];
   RehabnowSharedPreferences rsp = RehabnowSharedPreferences();
-  bool _reminder;
-  TimeOfDay _reminderTime;
+  late bool? _reminder;
+  late TimeOfDay _reminderTime;
   @override
   void initState() {
     super.initState();
     _reminder = rsp.reminder == null ? false : rsp.reminder;
-    String reminderTime = rsp.reminderTime;
-    List<String> reminderTimes =
-        reminderTime == null ? null : reminderTime.split(":");
-    _reminderTime = reminderTime != null
+    String? reminderTime = rsp.reminderTime;
+    List<String>? reminderTimes =
+        (reminderTime == null ? null : reminderTime.split(":"));
+    _reminderTime = reminderTimes != null
         ? TimeOfDay(
             hour: int.parse(reminderTimes[0]),
             minute: int.parse(reminderTimes[1]))
@@ -76,7 +75,7 @@ class _ViewReminderState extends State<ViewReminder> {
                     leading: Icon(Icons.alarm),
                     title: Text("Enable Reminder"),
                     trailing: Switch(
-                      value: _reminder,
+                      value: _reminder!,
                       onChanged: (value) {
                         setState(() => _reminder = value);
                         rsp.reminder = value;
@@ -110,9 +109,9 @@ class _ViewReminderState extends State<ViewReminder> {
                   ),
                 ),
                 onTap: () async {
-                  if (_reminder) {
-                    TimeOfDay time = await showTimePicker(
-                        context: context, initialTime: _reminderTime);
+                  if (_reminder!) {
+                    TimeOfDay time = (await showTimePicker(
+                        context: context, initialTime: _reminderTime))!;
                     if (time != null) {
                       rsp.reminderTime = "${time.hour}:${time.minute}";
                       print(rsp.reminderTime);
