@@ -14,8 +14,8 @@ const String RESET_PASSWORD = "reset-password";
 
 Future<ResponseModel<LoginData>> login(String email, String password) async {
   HashMap<String, String> body = HashMap<String, String>();
-  body["email"] = email;
-  body["password"] = password;
+  body["email"] = email.trim();
+  body["password"] = password.trim();
   Response response = await httpService.httpPost(LOGIN, body);
   Map<String, dynamic> jsonDecoded = json.decode(response.body);
   ResponseModel<LoginData> responseModel = ResponseModel(
@@ -25,9 +25,9 @@ Future<ResponseModel<LoginData>> login(String email, String password) async {
   return Future.value(responseModel);
 }
 
-logout() {
+Future<void> logout() async {
   httpService.httpPost(LOGOUT, null);
-  RehabnowFlutterSecureStorage.storage.delete(key: "token");
+  return await RehabnowFlutterSecureStorage.storage.delete(key: "token");
 }
 
 Future<ResponseModel<Null>> resetPassword(String email) async {

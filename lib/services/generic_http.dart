@@ -10,10 +10,11 @@ import 'package:rehabnow_app/utils/flutter_secure_storage.dart';
 // }
 // HttpService._internal();
 
-// const String BASE = "http://10.0.2.2:8000";
-const String BASE = "http://127.0.0.1:8000";
+const String BASE = "http://10.0.2.2:8000";
+// const String BASE = "http://127.0.0.1:8000";
+// const String BASE = "https://rehabnow.herokuapp.com";
 const String MEDIA_URL = "$BASE/media/";
-const String BASE_URL = "$BASE/app/api/";
+const String BASE_URL = "$BASE/api/";
 
 Future<http.Response> httpGet(String url) async {
   String? token = await RehabnowFlutterSecureStorage.storage.read(key: "token");

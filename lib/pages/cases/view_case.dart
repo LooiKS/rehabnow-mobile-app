@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rehabnow_app/components/skeleton.dart';
+import 'package:rehabnow_app/constants/routes.constant.dart';
 import 'package:rehabnow_app/models/case.model.dart';
 import 'package:rehabnow_app/models/part.model.dart';
 import 'package:rehabnow_app/pages/cases/view_exercises.dart';
@@ -33,6 +34,9 @@ class _ViewCaseState extends State<ViewCase> {
       appBar: AppBar(
         title: Text(widget.caseObj.name ?? ""),
         centerTitle: true,
+        shape: RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.vertical(bottom: Radius.elliptical(20, 10))),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(5),
@@ -165,10 +169,8 @@ class _BodyPartCard extends StatelessWidget {
                 Icons.keyboard_arrow_right,
               ),
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => ViewExercises(
-                          partId: part.id!,
-                        )));
+                Navigator.of(context).pushNamed(RoutesConstant.VIEW_EXERCISES,
+                    arguments: {"id": part.id});
               },
             )
           ],

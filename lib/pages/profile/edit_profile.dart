@@ -111,6 +111,9 @@ class _ProfileEditState extends State<ProfileEdit> {
                   style: TextStyle(color: Colors.white),
                 ))
           ],
+          shape: RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.vertical(bottom: Radius.elliptical(20, 10))),
         ),
         body: Form(
           key: _form,
@@ -464,21 +467,30 @@ class _ProfileEditState extends State<ProfileEdit> {
   void _onsaved() {
     FocusScope.of(context).requestFocus(FocusNode());
     if (_form.currentState!.validate()) {
-      showLoadingDialog(context);
-      User _newUser = createUser();
-      saveProfile(_newUser, _currentPwController.text, _newPwController.text)
-          .then((res) {
-        Navigator.of(context, rootNavigator: true).pop();
-        setState(() {
-          _userFormError = res.data;
-        });
-        if (res.status != "success") {
-        } else {
-          Navigator.of(context, rootNavigator: true).pop();
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text("Profile Saved.")));
-        }
-      });
+      showAlertDialog(
+          context: context,
+          title: "Confirmation",
+          content: "Are you sure to update your profile",
+          cancelText: "Cancel",
+          cancelCallback: () {},
+          confirmCallback: () {
+            showLoadingDialog(context);
+            User _newUser = createUser();
+            saveProfile(
+                    _newUser, _currentPwController.text, _newPwController.text)
+                .then((res) {
+              Navigator.of(context).pop();
+              setState(() {
+                _userFormError = res.data;
+              });
+              if (res.status != "success") {
+              } else {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text("Profile Saved.")));
+              }
+            });
+          });
     }
   }
 

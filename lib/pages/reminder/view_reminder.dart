@@ -46,28 +46,55 @@ class _ViewReminderState extends State<ViewReminder> {
 
   @override
   Widget build(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Reminder"),
         centerTitle: true,
+        shape: RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.vertical(bottom: Radius.elliptical(20, 10))),
       ),
+      extendBodyBehindAppBar: true,
       body: SingleChildScrollView(
         child: Column(
           children: [
+            SizedBox(
+              height: kToolbarHeight - 10,
+            ),
             Container(
                 height: (MediaQuery.of(context).size.height - 150) / 2,
                 width: (MediaQuery.of(context).size.width),
                 alignment: Alignment.center,
                 padding: EdgeInsets.only(left: 20, right: 20),
-                child: Text(
-                  quote,
-                  style: TextStyle(fontSize: 20, color: Colors.white),
+                // margin: EdgeInsets.symmetric(vertical: 5),
+                child: Card(
+                  color: Colors.white70,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      quote,
+                      style: TextStyle(
+                        fontSize: 20,
+                        // backgroundColor: Colors.yellow,
+                      ),
+                    ),
+                  ),
                 ),
                 decoration: ShapeDecoration(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.only(
-                            bottomRight: Radius.circular(100))),
-                    color: Colors.lightBlueAccent)),
+                  image: DecorationImage(
+                    image: AssetImage(
+                      "assets/images/success.webp",
+                      // fit: BoxFit.contain,
+                      // width: width,
+                    ),
+                    fit: BoxFit.fitWidth,
+                  ),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10))),
+                  // color: Colors.lightBlueAccent
+                )),
             Container(
               child: Column(
                 children: [
@@ -127,7 +154,7 @@ class _ViewReminderState extends State<ViewReminder> {
                   }
                 },
               ),
-            )
+            ),
           ],
         ),
       ),

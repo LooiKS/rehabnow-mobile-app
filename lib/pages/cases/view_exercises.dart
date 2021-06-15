@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rehabnow_app/components/skeleton.dart';
 import 'package:rehabnow_app/models/exercise.model.dart';
+import 'package:rehabnow_app/pages/cases/view_cases.dart';
 import 'package:rehabnow_app/services/exercise.http.service.dart';
 import 'package:rehabnow_app/utils/time.constant.dart';
 
@@ -21,6 +22,9 @@ class _ViewExercisesState extends State<ViewExercises> {
       appBar: AppBar(
         title: Text("Exercises Records"),
         centerTitle: true,
+        shape: RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.vertical(bottom: Radius.elliptical(20, 10))),
       ),
       body: FutureBuilder<List<Exercise>>(
           future: getExercisesByPartId(widget.partId),
@@ -30,12 +34,9 @@ class _ViewExercisesState extends State<ViewExercises> {
                     ? Card(
                         child: Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Container(
-                          width: MediaQuery.of(context).size.width,
-                          child: Text(
-                            "No exercise found.",
-                            textAlign: TextAlign.center,
-                          ),
+                        child: NotFoundCenter(
+                          text: "No exercise found.",
+                          happy: false,
                         ),
                       ))
                     : ListView.separated(

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rehabnow_app/components/skeleton.dart';
+import 'package:rehabnow_app/constants/routes.constant.dart';
 import 'package:rehabnow_app/models/case.model.dart';
 import 'package:rehabnow_app/pages/cases/view_case.dart';
 import 'package:rehabnow_app/services/case.http.service.dart';
@@ -30,6 +31,9 @@ class _ViewCasesState extends State<ViewCases> {
       appBar: AppBar(
         title: Text("Cases"),
         centerTitle: true,
+        shape: RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.vertical(bottom: Radius.elliptical(20, 10))),
       ),
       body: SingleChildScrollView(
           child: Skeleton(
@@ -67,14 +71,9 @@ class _ViewCasesState extends State<ViewCases> {
               if (_filteredCases.isEmpty)
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                      width: MediaQuery.of(context).size.width,
-                      child: Text(
-                        "No case found.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                    padding: const EdgeInsets.all(30.0),
+                    child: NotFoundCenter(
+                      text: "No case found.",
                     ),
                   ),
                 )
@@ -88,6 +87,40 @@ class _ViewCasesState extends State<ViewCases> {
           ),
         ),
       )),
+    );
+  }
+}
+
+class NotFoundCenter extends StatelessWidget {
+  final String text;
+
+  final bool happy;
+
+  const NotFoundCenter({
+    Key? key,
+    required this.text,
+    this.happy = true,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      heightFactor: 1,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            happy ? "assets/images/party.png" : "assets/images/not-found.png",
+            width: 200,
+            color: Colors.blue,
+          ),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -134,10 +167,8 @@ class _CaseCard extends StatelessWidget {
             IconButton(
               icon: Icon(Icons.keyboard_arrow_right),
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => ViewCase(
-                          caseObj: caseObj,
-                        )));
+                Navigator.of(context).pushNamed(RoutesConstant.CASE,
+                    arguments: {"caseObj": caseObj});
               },
             )
           ],

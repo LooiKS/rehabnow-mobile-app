@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rehabnow_app/components/skeleton.dart';
+import 'package:rehabnow_app/constants/routes.constant.dart';
 import 'package:rehabnow_app/main.dart';
 import 'package:rehabnow_app/models/case.model.dart';
 import 'package:rehabnow_app/models/part.model.dart';
+import 'package:rehabnow_app/pages/cases/view_cases.dart';
 import 'package:rehabnow_app/pages/connection/connection.dart';
 import 'package:rehabnow_app/pages/exercises/game.dart';
 import 'package:rehabnow_app/pages/exercises/skip_the_hurdles.dart';
@@ -58,7 +60,11 @@ class _ExercisesState extends State<Exercises> {
     super.initState();
     getAllCases(status: "Under Treatment").then((cases) {
       _cases.value = cases.map((e) => CaseDisplay(e)).toList();
-      updateParts(cases.first.id);
+      if (cases.isNotEmpty) {
+        updateParts(cases.first.id);
+      } else {
+        _parts.value = [];
+      }
     });
   }
 
@@ -77,6 +83,9 @@ class _ExercisesState extends State<Exercises> {
       appBar: AppBar(
         title: Text("Exercises"),
         centerTitle: true,
+        shape: RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.vertical(bottom: Radius.elliptical(20, 10))),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(8),
@@ -85,9 +94,7 @@ class _ExercisesState extends State<Exercises> {
           child: Container(
             child: Column(
               children: [
-                _DividerText(text: "Cases"),
                 _buildCases(),
-                _DividerText(text: "Parts"),
                 _buildPartsChoice(),
                 _DividerText(text: "Games"),
                 _ChoiceChipWithIcon(
@@ -118,61 +125,74 @@ class _ExercisesState extends State<Exercises> {
     return ValueListenableBuilder(
       valueListenable: _cases,
       builder: (context, List<CaseDisplay>? value, child) {
-        return value == null
-            ? Skeleton(
-                child: Text("Loading..."),
-                isLoading: true,
-                lines: 3,
-              )
-            : value.isEmpty
-                ? Text("No cases under treatment found.")
-                : Column(
-                    children: [
-                      ...value
-                          .asMap()
-                          .entries
-                          .map((e) => _ChoiceChipWithIcon(
-                                label: e.value.name ?? "",
-                                selected: _caseSelected,
-                                index: e.key,
-                                onSelected: (i) => setState(() {
-                                  _caseSelected = e.key;
-                                  updateParts(_cases.value![_caseSelected].id);
-                                }),
-                              ))
-                          .toList()
-                    ],
-                  );
+        return Column(
+          children: [
+            _DividerText(text: "Cases"),
+            value == null
+                ? Skeleton(
+                    child: Text("Loading..."),
+                    isLoading: true,
+                    lines: 3,
+                  )
+                : value.isEmpty
+                    ? NotFoundCenter(text: "No case found.")
+                    // Text("No cases under treatment found.")
+                    : Column(
+                        children: [
+                          ...value
+                              .asMap()
+                              .entries
+                              .map((e) => _ChoiceChipWithIcon(
+                                    label: e.value.name ?? "",
+                                    selected: _caseSelected,
+                                    index: e.key,
+                                    onSelected: (i) => setState(() {
+                                      _caseSelected = e.key;
+                                      updateParts(
+                                          _cases.value![_caseSelected].id);
+                                    }),
+                                  ))
+                              .toList()
+                        ],
+                      )
+          ],
+        );
       },
     );
   }
 
-  ValueListenableBuilder<List<PartDisplay>?> _buildPartsChoice() {
+  Widget _buildPartsChoice() {
     return ValueListenableBuilder(
         valueListenable: _parts,
-        builder: (context, List<PartDisplay>? value, child) => value == null
-            ? Skeleton(
-                child: Text("Loading"),
-                isLoading: true,
-                lines: 3,
+        builder: (context, List<PartDisplay>? value, child) => value == null ||
+                value.isNotEmpty
+            ? Column(
+                children: [
+                  _DividerText(text: "Parts"),
+                  value == null
+                      ? Skeleton(
+                          child: Text("Loading"),
+                          isLoading: true,
+                          lines: 3,
+                        )
+                      : Column(
+                          children: [
+                            ...value
+                                .asMap()
+                                .entries
+                                .map((e) => _ChoiceChipWithIcon(
+                                      label: e.value.name ?? "",
+                                      selected: _partSelected,
+                                      index: e.key,
+                                      onSelected: (i) =>
+                                          setState(() => _partSelected = e.key),
+                                    ))
+                                .toList(),
+                          ],
+                        )
+                ],
               )
-            : value.isEmpty
-                ? Text("No parts found.")
-                : Column(
-                    children: [
-                      ...value
-                          .asMap()
-                          .entries
-                          .map((e) => _ChoiceChipWithIcon(
-                                label: e.value.name ?? "",
-                                selected: _partSelected,
-                                index: e.key,
-                                onSelected: (i) =>
-                                    setState(() => _partSelected = e.key),
-                              ))
-                          .toList(),
-                    ],
-                  ));
+            : Container());
   }
 
   void _startPressed() {
@@ -186,17 +206,15 @@ class _ExercisesState extends State<Exercises> {
           content:
               "The device for ${_parts.value?[_partSelected].name} is not set. Please proceed to the configuration.",
           confirmCallback: () {
-            Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => Connection()))
-                .then((value) => _parts.value?[_partSelected].deviceUuid =
+            Navigator.of(context).pushNamed(RoutesConstant.CONNECTION).then(
+                (value) => _parts.value?[_partSelected].deviceUuid =
                     _getDevice(_parts.value?[_partSelected].name));
           });
     } else {
-      Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => Game(
-                gameNum: _gameSelected,
-                part: _parts.value![_partSelected],
-              )));
+      Navigator.of(context).pushNamed(RoutesConstant.GAME, arguments: {
+        "gameNum": _gameSelected,
+        "part": _parts.value![_partSelected]
+      });
     }
   }
 
