@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:http/http.dart';
 import 'package:rehabnow_app/models/login.model.dart';
 import 'package:rehabnow_app/models/response.model.dart';
-import 'package:rehabnow_app/models/user.model.dart';
 import 'package:rehabnow_app/services/generic_http.dart' as httpService;
 import 'package:rehabnow_app/utils/flutter_secure_storage.dart';
 

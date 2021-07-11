@@ -4,9 +4,8 @@ import 'package:rehabnow_app/components/skeleton.dart';
 import 'package:rehabnow_app/constants/routes.constant.dart';
 import 'package:rehabnow_app/models/case.model.dart';
 import 'package:rehabnow_app/models/part.model.dart';
-import 'package:rehabnow_app/pages/cases/view_exercises.dart';
 import 'package:rehabnow_app/services/case.http.service.dart';
-import 'package:rehabnow_app/utils/time.constant.dart';
+import 'package:rehabnow_app/constants/time.constant.dart';
 
 class ViewCase extends StatefulWidget {
   final Case caseObj;

@@ -1,18 +1,9 @@
-import 'dart:io';
-
 import 'package:http/http.dart' as http;
 import 'package:rehabnow_app/utils/flutter_secure_storage.dart';
 
-// class HttpService {
-// static final HttpService _httpService = HttpService._internal();
-// factory HttpService() {
-// return _httpService;
-// }
-// HttpService._internal();
-
-const String BASE = "http://10.0.2.2:8000";
+// const String BASE = "http://10.0.2.2:8000";
 // const String BASE = "http://127.0.0.1:8000";
-// const String BASE = "https://rehabnow.herokuapp.com";
+const String BASE = "https://rehabnow.herokuapp.com";
 const String MEDIA_URL = "$BASE/media/";
 const String BASE_URL = "$BASE/api/";
 
@@ -60,4 +51,3 @@ Future<http.StreamedResponse> httpPostMultipart(
 
   return multipartRequest.send();
 }
-// }

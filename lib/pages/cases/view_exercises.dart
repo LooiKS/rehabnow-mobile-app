@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rehabnow_app/components/not_found_center.dart';
 import 'package:rehabnow_app/components/skeleton.dart';
 import 'package:rehabnow_app/models/exercise.model.dart';
-import 'package:rehabnow_app/pages/cases/view_cases.dart';
 import 'package:rehabnow_app/services/exercise.http.service.dart';
-import 'package:rehabnow_app/utils/time.constant.dart';
+import 'package:rehabnow_app/constants/time.constant.dart';
 
 class ViewExercises extends StatefulWidget {
   final int partId;

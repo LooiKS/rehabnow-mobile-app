@@ -13,12 +13,13 @@ import 'package:rehabnow_app/pages/cases/view_exercises.dart';
 import 'package:rehabnow_app/pages/connection/connection.dart';
 import 'package:rehabnow_app/pages/exercises/exercises.dart';
 import 'package:rehabnow_app/pages/exercises/game.dart';
-import 'package:rehabnow_app/pages/home/reset_password.dart';
+import 'package:rehabnow_app/pages/prelogin/reset_password.dart';
 import 'package:rehabnow_app/pages/prelogin/login.dart';
-import 'package:rehabnow_app/pages/prelogin/main_page.dart';
+import 'package:rehabnow_app/pages/home/main_page.dart';
 import 'package:rehabnow_app/pages/profile/edit_profile.dart';
 import 'package:rehabnow_app/pages/profile/view_profile.dart';
 import 'package:rehabnow_app/pages/reminder/view_reminder.dart';
+import 'package:rehabnow_app/services/profile.http.service.dart';
 import 'package:rehabnow_app/utils/flutter_secure_storage.dart';
 import 'package:rehabnow_app/utils/shared_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,14 +31,13 @@ FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 void main() async {
-  // RehabnowSharedPreferences preferences;
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
 
   print(await FlutterNativeTimezone.getLocalTimezone());
   tz.setLocalLocation(
       tz.getLocation(await FlutterNativeTimezone.getLocalTimezone()));
-// initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
+
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -60,7 +60,7 @@ void main() async {
   SharedPreferences.getInstance()
       .then((value) => RehabnowSharedPreferences.sharedPreferences = value);
 
-  runApp(MyApp());
+  runApp(RehabNowApp());
 }
 
 Future selectNotification(String? payload) async {
@@ -72,22 +72,12 @@ Future selectNotification(String? payload) async {
 Future onDidReceiveLocalNotification(
     int i, String? s1, String? s2, String? s3) async {}
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+class RehabNowApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'RehabNow',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.cyan,
         primaryColor: Color.fromRGBO(100, 5, 190, 1),
         primaryIconTheme: IconThemeData(color: Colors.white),
@@ -106,10 +96,6 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.dark,
           centerTitle: true,
           backgroundColor: Color.fromRGBO(100, 5, 190, 1),
-          // foregroundColor: Color.fromRGBO(152, 51, 174, 1),
-          // textTheme: TextTheme(headline6: TextStyle(color: Colors.black)),
-          // elevation: 0,
-          // systemOverlayStyle: SystemUiOverlayStyle.dark,
         ),
         scaffoldBackgroundColor: Color.fromRGBO(255 - 9, 255 - 9, 255 - 9, 1),
       ),
@@ -158,7 +144,7 @@ class MyApp extends StatelessWidget {
             page = Profile();
             break;
           case RoutesConstant.HOME:
-            page = MyApp();
+            page = RehabNowApp();
             break;
           case RoutesConstant.EDIT_PROFILE:
             page = ProfileEdit(user: args["user"] as User);
@@ -170,14 +156,13 @@ class MyApp extends StatelessWidget {
         backgroundColor: Colors.grey[200],
         extendBodyBehindAppBar: true,
         body: SafeArea(
-          child: FutureBuilder<String?>(
-              future: RehabnowFlutterSecureStorage.storage.read(key: "token"),
+          child: FutureBuilder<bool>(
+              future: verifyToken(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return CircularProgressIndicator();
+                if (snapshot.data == null) {
+                  return Center(child: CircularProgressIndicator());
                 } else {
-                  if (snapshot.hasData) {
-                    //todo: check token
+                  if (snapshot.data ?? false) {
                     return MainPage();
                   } else {
                     return Login();
@@ -187,5 +172,15 @@ class MyApp extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<bool> verifyToken() async {
+    String? token =
+        await RehabnowFlutterSecureStorage.storage.read(key: "token");
+    if (token != null) {
+      User user = await getProfile();
+      return user.id != null;
+    }
+    return false;
   }
 }

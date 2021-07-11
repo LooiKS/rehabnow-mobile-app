@@ -3,11 +3,8 @@ import 'dart:io';
 import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart' show DateFormat;
-import 'package:rehabnow_app/components/rehabnow_scaffold.dart';
-import 'package:rehabnow_app/main.dart';
 import 'package:rehabnow_app/models/city.model.dart';
 import 'package:rehabnow_app/models/country.model.dart';
 import 'package:rehabnow_app/models/state.model.dart';
@@ -15,7 +12,7 @@ import 'package:rehabnow_app/models/user.model.dart';
 import 'package:rehabnow_app/models/user_form.error.model.dart';
 import 'package:rehabnow_app/services/generic_http.dart';
 import 'package:rehabnow_app/services/profile.http.service.dart';
-import 'package:rehabnow_app/utils/loading.dart';
+import 'package:rehabnow_app/utils/dialog.dart';
 
 class ProfileEdit extends StatefulWidget {
   final User user;
@@ -83,9 +80,6 @@ class _ProfileEditState extends State<ProfileEdit> {
     _state = widget.user.state!;
     _city = widget.user.city!;
     _nationality = widget.user.nationality!;
-
-    print(DateFormat("dd/MM/yyyy")
-        .format(DateTime.fromMillisecondsSinceEpoch(widget.user.dob!)));
   }
 
   @override
@@ -117,7 +111,8 @@ class _ProfileEditState extends State<ProfileEdit> {
         ),
         body: Form(
           key: _form,
-          child: Container(
+          child: GestureDetector(
+            onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
             child: SingleChildScrollView(
               padding: EdgeInsets.only(top: 10),
               child: Column(
@@ -324,6 +319,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                             EditProfileTextInputContainer(
                                 labelText: "Postal Code",
                                 textEditingController: _postalCodeController,
+                                keyboardType: TextInputType.number,
                                 errorText:
                                     _userFormError.postcode?.first.message,
                                 validator: (value) =>
@@ -413,6 +409,14 @@ class _ProfileEditState extends State<ProfileEdit> {
                             errorText:
                                 _userFormError.new_password?.first.message,
                             controller: _newPwController,
+                            validator: (value) {
+                              if (value != null &&
+                                  value.isNotEmpty &&
+                                  !RegExp(r"^(?=.*[^A-z\s\d][\\\^]?)(?=.*\d)(?=.*[a-zA-Z]).{8,}$")
+                                      .hasMatch(value)) {
+                                return "Please enter password with at least 8 characters (including alphabet, digit and special character)";
+                              }
+                            },
                           ),
                           EditProfilePasswordTypeInput(
                             labelText: "Confirm New Password",
@@ -436,9 +440,7 @@ class _ProfileEditState extends State<ProfileEdit> {
   }
 
   String? _validateNotEmpty(String? value, String field) =>
-      value == null || value.trim().isEmpty // value!.length > 0
-          ? null //"$field is required"
-          : null;
+      value == null || value.trim().isEmpty ? "$field is required." : null;
 
   User createUser() {
     User user = widget.user;
@@ -446,7 +448,7 @@ class _ProfileEditState extends State<ProfileEdit> {
         user.id,
         user.lastLogin,
         user.email,
-        user.createdDt, //dateTime.
+        user.createdDt,
         dateTime.millisecondsSinceEpoch,
         _firstNameController.text,
         _gender,
@@ -466,6 +468,9 @@ class _ProfileEditState extends State<ProfileEdit> {
 
   void _onsaved() {
     FocusScope.of(context).requestFocus(FocusNode());
+    setState(() {
+      _userFormError = UserFormError.blank();
+    });
     if (_form.currentState!.validate()) {
       showAlertDialog(
           context: context,
@@ -498,20 +503,16 @@ class _ProfileEditState extends State<ProfileEdit> {
     if (createUser() == widget.user) {
       Navigator.pop(context);
     } else {
-      showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-                title: Text("Confirmation"),
-                content: Text("Changes unsaved. Confirm to leave?"),
-                actions: [
-                  ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pop(context);
-                      },
-                      child: Text("OK"))
-                ],
-              ));
+      showAlertDialog(
+        context: context,
+        title: "Confirmation",
+        content: "Changes unsaved. Confirm to leave?",
+        confirmCallback: () {
+          Navigator.pop(context);
+        },
+        cancelText: "Cancel",
+        cancelCallback: () {},
+      );
     }
   }
 }
@@ -600,6 +601,7 @@ class EditProfileDropdownButtonFormFieldContainer<T> extends StatelessWidget {
             items: items,
             onChanged: onChanged,
             value: value,
+            isExpanded: true,
             icon: isLoadingData ?? false
                 ? SizedBox(
                     child: CircularProgressIndicator(

@@ -46,8 +46,6 @@ class _ViewReminderState extends State<ViewReminder> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-
     return Scaffold(
       appBar: AppBar(
         title: Text("Reminder"),
@@ -68,7 +66,6 @@ class _ViewReminderState extends State<ViewReminder> {
                 width: (MediaQuery.of(context).size.width),
                 alignment: Alignment.center,
                 padding: EdgeInsets.only(left: 20, right: 20),
-                // margin: EdgeInsets.symmetric(vertical: 5),
                 child: Card(
                   color: Colors.white70,
                   child: Padding(
@@ -77,7 +74,6 @@ class _ViewReminderState extends State<ViewReminder> {
                       quote,
                       style: TextStyle(
                         fontSize: 20,
-                        // backgroundColor: Colors.yellow,
                       ),
                     ),
                   ),
@@ -85,15 +81,12 @@ class _ViewReminderState extends State<ViewReminder> {
                 decoration: ShapeDecoration(
                   image: DecorationImage(
                     image: AssetImage(
-                      "assets/images/success.webp",
-                      // fit: BoxFit.contain,
-                      // width: width,
+                      "assets/images/success.jpeg",
                     ),
                     fit: BoxFit.fitWidth,
                   ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(10))),
-                  // color: Colors.lightBlueAccent
+                      borderRadius: BorderRadius.all(Radius.circular(1))),
                 )),
             Container(
               child: Column(
@@ -141,7 +134,6 @@ class _ViewReminderState extends State<ViewReminder> {
                         context: context, initialTime: _reminderTime))!;
                     if (time != null) {
                       rsp.reminderTime = "${time.hour}:${time.minute}";
-                      print(rsp.reminderTime);
                       scheduleNotification(time);
                       setState(() {
                         _reminderTime = time;

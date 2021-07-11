@@ -3,9 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
-import 'package:rehabnow_app/main.dart';
-import 'package:rehabnow_app/utils/loading.dart';
+import 'package:rehabnow_app/utils/dialog.dart';
 
 enum BugState { UPWARDS, DOWNWARDS }
 
@@ -29,112 +27,45 @@ class CatchTheBug extends StatefulWidget {
     required this.target,
   }) : super(key: key);
   @override
-  _GameState createState() => _GameState();
+  _CatchTheBugState createState() => _CatchTheBugState();
 }
 
-class _GameState extends State<CatchTheBug> {
-  int posX = 200, posY = 0, score = 0, escaped = 0, oscillation = 0;
+class _CatchTheBugState extends State<CatchTheBug> {
   late Timer timer;
-  double height = 0, width = 0, trashY = 50;
-  BugState bugState = BugState.UPWARDS;
   bool isPaused = false;
-  late BuildContext _context;
-
-  bool reachTop = false;
-  Stream<double> streamOrientation() async* {
-    while (true) {
-      await Future.delayed(Duration(milliseconds: 500));
-      yield Random().nextInt(180) - 90;
-    }
-  }
-
-  StreamSubscription<double>? ss;
+  BugState bugState = BugState.UPWARDS;
+  double height = 0, width = 0, trashY = 50;
+  StreamSubscription<double>? orientationStream;
+  int posX = 200, posY = 0, score = 0, escaped = 0, oscillation = 0;
 
   @override
   void initState() {
     super.initState();
     isPaused = widget.pause;
-    // ss?.cancel();
-    ss = widget.stream?.listen((event) {
-      // print(event);
+
+    orientationStream = widget.stream?.listen((event) {
       if (!widget.pause) {
         setState(() {
-          trashY = (event + 90) / 180 * (height - 50);
+          trashY = event * (height - 50);
         });
       }
     });
-    timer = Timer.periodic(Duration(milliseconds: 25), (x) {
-      print(widget.pause);
-      if (!widget.pause && !isPaused) {
-        if (widget.target - widget.oscillation == 0) {
-          isPaused = true;
-          widget.onPaused();
-          // WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-          print("trigger dialog");
-          showAlertDialog(
-              context: _context,
-              title: "Exercise Done",
-              content:
-                  "Congratulations! You completed an exercise. Do you still want to continue?",
-              // barrierDismissible: false,
-              confirmCallback: () {
-                Navigator.of(context).pop();
-                widget.onResume();
-              },
-              cancelCallback: () {
-                Navigator.of(context).pop();
-                widget.onSaved();
-              });
-          // });
-        } else
-          setState(() {
-            posX -= 10;
-            if (posX < 30) {
-              posX = width.toInt();
-              // print(trashY);
-              // print(posY);
-              if ((trashY - posY).abs() <= 20)
-                score++;
-              else
-                escaped++;
-              switch (bugState) {
-                case BugState.UPWARDS:
-                  posY = posY - Random().nextInt(200) * 5;
-                  break;
-                case BugState.DOWNWARDS:
-                  posY = posY + Random().nextInt(200) * 5;
-                  break;
-              }
-
-              if (posY > height - 30) {
-                posY = height.toInt();
-                bugState = BugState.UPWARDS;
-                // oscillation--;
-              } else if (posY < 0) {
-                posY = 0;
-                bugState = BugState.DOWNWARDS;
-              }
-            }
-          });
-      }
-    });
+    timer = Timer.periodic(Duration(milliseconds: 25), _timerCallback);
   }
 
   @override
   void dispose() {
     super.dispose();
     timer.cancel();
-    ss?.cancel();
+    orientationStream?.cancel();
   }
 
   @override
   Widget build(BuildContext context) {
-    _context = context;
     Size screen = MediaQuery.of(context).size;
-    double iconSize = 30; //IconTheme.of(context).size;
+    double iconSize = 30;
     height = screen.height - 80;
     width = screen.width - iconSize;
-    int layers = height ~/ iconSize;
 
     return Scaffold(
       backgroundColor: Colors.blueAccent,
@@ -142,126 +73,9 @@ class _GameState extends State<CatchTheBug> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: () {
-                widget.onPaused();
-                // setState(() {
-                //   isPaused = true;
-                // });
-                showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (context) => AlertDialog(
-                          title: Text("Confirmation"),
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 20),
-                          content: Text("Confirm to quit the exercise?"),
-                          actions: [
-                            FlatButton(
-                              child: Text(
-                                "Cancel",
-                                style: TextStyle(color: Colors.black),
-                              ),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                widget.onResume();
-
-                                // setState(() {
-                                //   isPaused = false;
-                                // });
-                              },
-                              color: Colors.yellow,
-                            ),
-                            ElevatedButton(
-                              child: Text("Yes"),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                // Navigator.pop(context);
-                                widget.onSaved();
-                              },
-                            ),
-                          ],
-                        ));
-                // Navigator.of(context).pop();
-              },
-              child: Text("STOP"),
-              style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(Colors.red)),
-            ),
-          ),
-        ],
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Column(
-              children: [
-                Text(
-                  "Caught ",
-                  style: TextStyle(fontSize: 13),
-                ),
-                Row(
-                  children: [Icon(Icons.bug_report), Text("x $score")],
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text(
-                  "Target ",
-                  style: TextStyle(fontSize: 13),
-                ),
-                Row(
-                  children: [
-                    Icon(Icons.bug_report),
-                    Text("x ${widget.target}")
-                  ],
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text(
-                  "Remaining Oscillations",
-                  style: TextStyle(fontSize: 13),
-                ),
-                Row(
-                  children: [
-                    Icon(Icons.rotate_left_outlined),
-                    Text("x ${widget.oscillation}")
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
+        actions: _buildActions(context),
+        title: _buildScoreInfo(),
       ),
-      // floatingActionButton: Row(
-      //   mainAxisAlignment: MainAxisAlignment.center,
-      //   children: [
-      //     Padding(
-      //       padding: const EdgeInsets.all(8.0),
-      //       child: ElevatedButton(
-      //           child: Text("U P"),
-      //           onPressed: () {
-      //             // ss?.cancel();
-
-      //             setState(() => trashY = trashY - 5 > 0 ? trashY - 5 : trashY);
-      //           }),
-      //     ),
-      //     Padding(
-      //       padding: const EdgeInsets.all(8.0),
-      //       child: ElevatedButton(
-      //           child: Text("D O W N ${posX}"),
-      //           onPressed: () {
-      //             setState(() =>
-      //                 trashY = trashY + 20 < height ? trashY + 10 : trashY);
-      //           }),
-      //     ),
-      //   ],
-      // ),
       body: Container(
         child: Stack(
           children: [
@@ -281,11 +95,10 @@ class _GameState extends State<CatchTheBug> {
                 left: 20,
                 top: trashY,
                 child: ClipPath(
-                  clipper: posX % 100 < 50 ? MyClipper() : null,
+                  clipper: posX % 100 < 50 ? CatcherClipper() : null,
                   child: Container(
                     width: 50,
                     height: 50,
-                    // color: Colors.amber,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.lime,
@@ -297,9 +110,134 @@ class _GameState extends State<CatchTheBug> {
       ),
     );
   }
+
+  void _timerCallback(x) {
+    if (!widget.pause && !isPaused) {
+      if (widget.target - widget.oscillation == 0) {
+        isPaused = true;
+        widget.onPaused();
+
+        showAlertDialog(
+            context: context,
+            title: "Exercise Done",
+            content:
+                "Congratulations! You completed an exercise. Do you still want to continue?",
+            confirmCallback: () {
+              Navigator.of(context).pop();
+              widget.onResume();
+            },
+            cancelCallback: () {
+              Navigator.of(context).pop();
+              widget.onSaved();
+            });
+      } else
+        setState(() {
+          posX -= 10;
+          if (posX < 30) {
+            posX = width.toInt();
+
+            if ((trashY - posY).abs() <= 20)
+              score++;
+            else
+              escaped++;
+            switch (bugState) {
+              case BugState.UPWARDS:
+                posY = posY - Random().nextInt(200) * 5;
+                break;
+              case BugState.DOWNWARDS:
+                posY = posY + Random().nextInt(200) * 5;
+                break;
+            }
+
+            if (posY > height - 30) {
+              posY = height.toInt();
+              bugState = BugState.UPWARDS;
+            } else if (posY < 0) {
+              posY = 0;
+              bugState = BugState.DOWNWARDS;
+            }
+          }
+        });
+    }
+  }
+
+  List<Widget> _buildActions(BuildContext context) {
+    return [
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ElevatedButton(
+          onPressed: () {
+            widget.onPaused();
+            showAlertDialog(
+              context: context,
+              title: "Confirmation",
+              content: "Confirm to quit the exercise?",
+              confirmCallback: () {
+                widget.onSaved();
+              },
+              cancelText: "Cancel",
+              cancelCallback: () {
+                widget.onResume();
+              },
+            );
+          },
+          child: Text("STOP"),
+          style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.all(Colors.red)),
+        ),
+      ),
+    ];
+  }
+
+  Row _buildScoreInfo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        Column(
+          children: [
+            Text(
+              "Caught ",
+              style: TextStyle(fontSize: 13),
+            ),
+            Row(
+              children: [Icon(Icons.bug_report), Text("x $score")],
+            ),
+          ],
+        ),
+        Column(
+          children: [
+            Text(
+              "Target ",
+              style: TextStyle(fontSize: 13),
+            ),
+            Row(
+              children: [
+                Icon(Icons.rotate_left_outlined),
+                Text("x ${widget.target}")
+              ],
+            ),
+          ],
+        ),
+        Column(
+          children: [
+            Text(
+              "Oscillations",
+              style: TextStyle(fontSize: 13),
+            ),
+            Row(
+              children: [
+                Icon(Icons.rotate_left_outlined),
+                Text("x ${widget.oscillation}")
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
-class MyClipper extends CustomClipper<Path> {
+class CatcherClipper extends CustomClipper<Path> {
   @override
   getClip(Size size) {
     Path path = Path();

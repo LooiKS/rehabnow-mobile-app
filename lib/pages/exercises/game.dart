@@ -6,12 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 import 'package:rehabnow_app/components/dot_loading_indicator.dart';
-import 'package:rehabnow_app/main.dart';
 import 'package:rehabnow_app/pages/exercises/catch_the_bug_game.dart';
 import 'package:rehabnow_app/pages/exercises/exercises.dart';
 import 'package:rehabnow_app/pages/exercises/skip_the_hurdles.dart';
 import 'package:rehabnow_app/services/exercise.http.service.dart';
-import 'package:rehabnow_app/utils/loading.dart';
+import 'package:rehabnow_app/utils/dialog.dart';
 
 enum GameState {
   PRECHECK_BLUETOOTH_STATUS,
@@ -41,8 +40,6 @@ class Game extends StatefulWidget {
 }
 
 class _GameState extends State<Game> {
-  // GameState _gameState.value = GameState.PRECHECK_BLUETOOTH_STATUS;
-
   Stream<double>? _orientationStream;
 
   ValueNotifier<GameState> _gameState =
@@ -63,6 +60,9 @@ class _GameState extends State<Game> {
   late String address;
 
   StreamSubscription<Uint8List>? _streamSubscription;
+
+  int maxAngle = 180;
+  int diffAngle = 90;
 
   /*
    * 1. check Bluetooth isEnabled
@@ -90,107 +90,20 @@ class _GameState extends State<Game> {
     });
   }
 
-  Stream<GameState> _stateStream() async* {
-    _gameState.addListener(() async* {
-      yield _gameState.value;
-    });
-    yield _gameState.value;
-  }
-
   void _prepareGame() {
     _gameState.value = GameState.PRECHECK_BLUETOOTH_STATUS;
     _mainStateProcessing();
 
-    // yield GameState.PRECHECK_BLUETOOTH_STATUS;
-    // bool isEnabled = await FlutterBluetoothSerial
-    //     .instance.isEnabled; //.then((value) async* {
-    // print(isEnabled);
-    // if (!isEnabled)
-    //   FlutterBluetoothSerial.instance.requestEnable().then((enabled) {
-    //     if (!enabled) {
-    //       Navigator.of(context).pop();
-    //       ScaffoldMessenger.of(context).showSnackBar(
-    //           SnackBar(content: Text("Bluetooth must be turned on.")));
-    //     }
-    //   });
-    // else {
-    //   _gameState.value = GameState.PRECHECK_DEVICE_CONNECTION;
-    //   yield _gameState;
-    //   _gameState.value = await _connectAndListen(widget.address, (error) {
-    //     Navigator.of(context).pop();
-    //     ScaffoldMessenger.of(context)
-    //         .showSnackBar(SnackBar(content: Text("Device must be turned on.")));
-    //   });
-    //   yield _gameState;
-    // }
     bluetoothStateSubscription =
         FlutterBluetoothSerial.instance.onStateChanged().listen((value) {
-      // await for (var value in bts) {
-      // if (_gameState.index > GameState.READY.index) {
-      //   // already in game
-      //   if (value == BluetoothState.STATE_OFF) {
-      //     // pause game
-      //     // request to turn on bluetooth
-      //     // if allow turn on, then proceed with connecting and resume
-      //     // if not allow then ask whether to quit game
-      //   }
-      // } else {
-      //   // have not been in game yet
-      //   if (value == BluetoothState.STATE_ON) {}
-      // }
-      print(value);
       if (value == BluetoothState.STATE_ON) {
-        // _gameState.value = _gameState.value.index < GameState.READY.index
-        //     ? GameState.PRECHECK_DEVICE_CONNECTION
-        //     : GameState.DEVICE_CONNECTING;
-        // _mainStateProcessing();
       } else if (value == BluetoothState.STATE_OFF) {
         _gameState.value = _gameState.value.index < GameState.READY.index
             ? GameState.PRECHECK_BLUETOOTH_STATUS
             : GameState.BLUETOOTH_DISCONNECTED;
         _mainStateProcessing();
       }
-      //   yield GameState.PRECHECK_DEVICE_CONNECTION;
-      //   _gameState.value = await _connectAndListen(widget.address, (error) {
-      //     showDialog(
-      //       context: context,
-      //       builder: (context) {
-      //         return AlertDialog(
-      //           title: Text("Disconnected"),
-      //           content: Text("Please make sure the device is turned on."),
-      //           actions: [
-      //             TextButton(
-      //               child: Text("Reconnect"),
-      //               onPressed: () {
-      //                 _connectAndListen(widget.address, () {});
-      //               },
-      //             )
-      //           ],
-      //         );
-      //       },
-      //     );
-      //     ScaffoldMessenger.of(context).showSnackBar(
-      //         SnackBar(content: Text("Device must be turned on.")));
-      //   });
-      //   yield _gameState;
-      // } else if (value == BluetoothState.STATE_OFF)
-      //   FlutterBluetoothSerial.instance.requestEnable();
-      // print(value == BluetoothState.STATE_ON);
-      // print(value);
     });
-    // }
-    // });
-  }
-
-  Future<GameState> _connectAndListen(String address, Function onError) {
-    return BluetoothConnection.toAddress(address).then((value) {
-      _listenPosition(value);
-      return GameState.READY;
-    }, onError: onError);
-  }
-
-  FutureOr<dynamic> _listenPosition(BluetoothConnection value) {
-    _orientationStream = _getOrientationStream(value.input.asBroadcastStream());
   }
 
   double initialValue = 0.0;
@@ -198,13 +111,10 @@ class _GameState extends State<Game> {
 
   Stream<double> _getOrientationStream(Stream<Uint8List> source) async* {
     List<int> _uint8List = [];
-    _streamSubscription = source.listen((event) {
-      // print(event);
-    });
+    _streamSubscription = source.listen((event) {});
     _streamSubscription!.onDone(() {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Device disconnected")));
-      print("disconnected");
       _gameState.value = GameState.DEVICE_DISCONNECTED;
       _mainStateProcessing();
     });
@@ -213,25 +123,24 @@ class _GameState extends State<Game> {
         if (val[i] == 10) {
           _uint8List = [];
         } else if (val[i] == 13) {
-          // latest position
-          // print(String.fromCharCodes(_uint8List));
           double value =
               double.tryParse(String.fromCharCodes(_uint8List)) ?? 0.0;
           value = initialValue + (1 / iteration) * (value - initialValue);
           initialValue = value;
-          // iteration++;
 
-          if (value > 60 && reachTop) {
+          double normalisedPosition = (value + diffAngle) / maxAngle;
+
+          if (normalisedPosition > 0.85 && reachTop) {
             reachTop = false;
             setState(() {
               oscillation++;
             });
           }
-          if (value < -60) {
+          if (normalisedPosition < 0.15) {
             reachTop = true;
           }
 
-          yield value;
+          yield normalisedPosition;
           continue;
         } else {
           _uint8List.add(val[i]);
@@ -244,6 +153,8 @@ class _GameState extends State<Game> {
   void initState() {
     super.initState();
     address = widget.part.deviceUuid!;
+    maxAngle = widget.part.name!.toUpperCase().indexOf("UPPER") > -1 ? 180 : 90;
+    diffAngle = widget.part.name!.toUpperCase().indexOf("UPPER") > -1 ? 90 : 0;
     _prepareGame();
     stopwatch = Stopwatch();
   }
@@ -264,9 +175,7 @@ class _GameState extends State<Game> {
   Widget build(BuildContext context) {
     SystemChrome.setEnabledSystemUIOverlays([]);
     return ValueListenableBuilder(
-        valueListenable: _gameState, // builder: builder)
-        // StreamBuilder<GameState>(
-        // stream: _stateStream(),
+        valueListenable: _gameState,
         builder: (context, GameState snapshot, child) {
           if (snapshot != null && snapshot.index >= GameState.READY.index)
             return widget.gameNum == 1
@@ -342,16 +251,6 @@ class _GameState extends State<Game> {
   }
 
   Future<void> _mainStateProcessing() async {
-    // switch (_gameState) {
-    //   case GameState.PRECHECK_BLUETOOTH_STATUS:
-    //     _gameState.value = GameState.PRECHECK_DEVICE_CONNECTION;
-    //     break;
-    //   case GameState.PRECHECK_DEVICE_CONNECTION:
-    //     break;
-    //   case GameState.PRE_DEVICE_NOT_DETECTED:
-    //     break;
-    //   default:
-    // }
     _gameState.notifyListeners();
     switch (_gameState.value) {
       case GameState.PRECHECK_BLUETOOTH_STATUS:
@@ -364,9 +263,6 @@ class _GameState extends State<Game> {
         }
         break;
       case GameState.PRECHECK_DEVICE_CONNECTION:
-        // FlutterBluetoothSerial.instance
-        //     .(widget.address)
-        //     .then((value) => print(value));
         BluetoothConnection.toAddress(address).then((value) {
           bluetoothConnection = value;
           _orientationStream =
@@ -395,7 +291,6 @@ class _GameState extends State<Game> {
         setState(() {
           isPaused = true;
         });
-        print("paused");
         break;
       case GameState.BLUETOOTH_DISCONNECTED:
         stopwatch.stop();
@@ -404,11 +299,9 @@ class _GameState extends State<Game> {
         });
         FlutterBluetoothSerial.instance.requestEnable().then((enabled) {
           if (enabled) {
-            // connect device
             _gameState.value = GameState.DEVICE_CONNECTING;
             return _mainStateProcessing();
           } else {
-            // dialog to ask whether to continue?
             showAlertDialog(
               context: context,
               title: "Confirmation",
@@ -426,7 +319,6 @@ class _GameState extends State<Game> {
               extraButtonCallback: () {
                 /* save and back */
                 Future.delayed(Duration(seconds: 2), () {
-                  // TODO: change to http
                   Navigator.of(context).pop();
                 });
               },
@@ -448,7 +340,7 @@ class _GameState extends State<Game> {
           return _mainStateProcessing();
         }, onError: (e) {
           /* device not on */
-          // still cannot find, ask whether to proceed?
+
           showAlertDialog(
             context: context,
             title: "Confirmation",
@@ -465,7 +357,6 @@ class _GameState extends State<Game> {
             extraButtonCallback: () {
               /* save and go back */
               Future.delayed(Duration(seconds: 2), () {
-                // TODO: change to http
                 Navigator.of(context).pop();
               });
             },
@@ -475,12 +366,11 @@ class _GameState extends State<Game> {
         break;
       case GameState.SAVING:
         stopwatch.stop();
-        print(stopwatch.elapsedMilliseconds);
         uploadExercise(widget.part.id!, stopwatch.elapsedMilliseconds / 1000.0,
                 oscillation)
             .then((value) {
           Navigator.of(context).pop();
-          // Navigator.of(context).pop();
+
           ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text("Exercise record saved.")));
         });

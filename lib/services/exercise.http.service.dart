@@ -10,9 +10,13 @@ const UPLOAD_EXERCISE = "upload-exercise";
 const GET_EXERCISES_RECORDS = "get-exercises-records";
 
 Future<List<Exercise>> getExercisesByPartId(int partId) async {
-  Response response = await httpGet("$GET_EXERCISE/$partId");
-  List<dynamic> jsonDecoded = jsonDecode(response.body);
-  return jsonDecoded.map((exercise) => Exercise.fromJson(exercise)).toList();
+  try {
+    Response response = await httpGet("$GET_EXERCISE/$partId");
+    List<dynamic> jsonDecoded = jsonDecode(response.body);
+    return jsonDecoded.map((exercise) => Exercise.fromJson(exercise)).toList();
+  } catch (e) {
+    throw e;
+  }
 }
 
 Future<List<ExerciseRecords>> getExercisesRecords() async {

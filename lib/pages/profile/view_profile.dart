@@ -1,11 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:rehabnow_app/components/rehabnow_scaffold.dart';
 import 'package:rehabnow_app/components/skeleton.dart';
 import 'package:rehabnow_app/constants/routes.constant.dart';
-import 'package:rehabnow_app/main.dart';
 import 'package:rehabnow_app/models/user.model.dart';
-import 'package:rehabnow_app/pages/profile/edit_profile.dart';
 import 'package:rehabnow_app/services/generic_http.dart';
 import 'package:rehabnow_app/services/profile.http.service.dart';
 import 'package:intl/intl.dart' show DateFormat;
@@ -34,7 +31,6 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    // print(profile.length);
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -47,9 +43,6 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
         child: FutureBuilder(
           future: getProfile(),
           builder: (context, AsyncSnapshot<User> snapshot) {
-            print("p = ${snapshot.data?.photo}");
-            // if (snapshot.connectionState == ConnectionState.waiting)
-            //   Future.delayed(Duration.zero, () => showLoadingDialog(context));
             return Skeleton(
               lines: 10,
               isLoading: snapshot.connectionState != ConnectionState.done,
@@ -80,9 +73,8 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                                     ),
                                     Row(
                                       children: <Widget>[
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                              right: 48.0),
+                                        Container(
+                                          width: 100,
                                           child: Text("Email"),
                                         ),
                                         Text(
@@ -97,9 +89,8 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                                     ),
                                     Row(
                                       children: <Widget>[
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(right: 8.0),
+                                        Container(
+                                          width: 100,
                                           child: Text("Phone Num"),
                                         ),
                                         Text(
@@ -220,9 +211,9 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
         {"name": "IC Num", "value": "${user.icPassport ?? ''}"},
         {"name": "Gender", "value": "${user.gender ?? ''}"},
         {
-          "name": "DOB", // Map<String, String>
+          "name": "DOB",
           "value":
-              "${DateFormat("dd/MM/yyyy").format(DateTime.fromMillisecondsSinceEpoch(user.dob!))}" // Map<String, String>
+              "${DateFormat("dd/MM/yyyy").format(DateTime.fromMillisecondsSinceEpoch(user.dob!))}"
         },
         {"name": "Nationality", "value": "${user.fullNationality ?? ''}"},
         {

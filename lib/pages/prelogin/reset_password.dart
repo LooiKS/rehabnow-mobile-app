@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rehabnow_app/services/login.http.service.dart';
-import 'package:rehabnow_app/utils/loading.dart';
+import 'package:rehabnow_app/utils/dialog.dart';
 
 class ResetPassword extends StatefulWidget {
   @override
@@ -65,7 +65,6 @@ class _ResetPasswordState extends State<ResetPassword>
                             Text(
                               "No worries, it is normal to be forgetful. We got you covered!",
                               textAlign: TextAlign.center,
-                              // style: TextStyle(),
                             ),
                             Padding(
                               padding: EdgeInsets.all(10),
@@ -95,8 +94,11 @@ class _ResetPasswordState extends State<ResetPassword>
                                 : Container(),
                             TextFormField(
                               controller: _emailController,
-                              validator: (value) => value!.length > 0
-                                  ? null
+                              validator: (value) => value!.trim().length > 0
+                                  ? RegExp(r"\b[\w\.-]+@[\w\.-]+\.\w{2,4}\b")
+                                          .hasMatch(value)
+                                      ? null
+                                      : "Email address is an invalid format."
                                   : "Email address is required.",
                               decoration: InputDecoration(
                                   prefixIcon: Icon(Icons.mail_outline),
@@ -108,13 +110,15 @@ class _ResetPasswordState extends State<ResetPassword>
                             ),
                             RaisedButton(
                               onPressed: () {
+                                setState(() {
+                                  _errorMessage = null;
+                                });
                                 FocusScope.of(context)
                                     .requestFocus(FocusNode());
                                 if (_formKey.currentState!.validate()) {
                                   showLoadingDialog(context);
                                   _errorMessage = _successMessage = null;
-                                  print(_emailController.text);
-                                  resetPassword(_emailController.text)
+                                  resetPassword(_emailController.text.trim())
                                       .then((value) {
                                     Navigator.of(context).pop();
                                     if (value.status == "success") {
@@ -145,7 +149,6 @@ class _ResetPasswordState extends State<ResetPassword>
                                 "Back to login page",
                                 style: TextStyle(
                                   color: Colors.blue,
-                                  // fontWeight: FontWeight.bold,
                                 ),
                               ),
                               onTap: () => Navigator.of(context).pop(),

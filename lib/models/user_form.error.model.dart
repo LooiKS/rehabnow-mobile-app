@@ -1,19 +1,25 @@
 import 'package:rehabnow_app/models/error.model.dart';
 
 class UserFormError {
+  // ignore: non_constant_identifier_names
   List<FormError>? first_name;
+  // ignore: non_constant_identifier_names
   List<FormError>? last_name;
   List<FormError>? dob;
   List<FormError>? gender;
+  // ignore: non_constant_identifier_names
   List<FormError>? ic_passport;
   List<FormError>? nationality;
   List<FormError>? country;
+  // ignore: non_constant_identifier_names
   List<FormError>? phone_num;
   List<FormError>? city;
   List<FormError>? state;
   List<FormError>? postcode;
   List<FormError>? address;
+  // ignore: non_constant_identifier_names
   List<FormError>? current_password;
+  // ignore: non_constant_identifier_names
   List<FormError>? new_password;
 
   UserFormError.blank();

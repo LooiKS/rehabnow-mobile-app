@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:http/http.dart';
 import 'package:rehabnow_app/models/city.model.dart';
 import 'package:rehabnow_app/models/country.model.dart';
-import 'package:rehabnow_app/models/error.model.dart';
 import 'package:rehabnow_app/models/response.model.dart';
 import 'package:rehabnow_app/models/state.model.dart';
 import 'package:rehabnow_app/models/user.model.dart';
@@ -19,7 +18,6 @@ const String SAVE_PROFILE = "save-profile";
 Future<User> getProfile() async {
   Response response = await httpGet(PROFILE);
   Map<String, dynamic> jsonDecoded = json.decode(response.body);
-  // print(response.body);
   User responseModel = User.fromJson(jsonDecoded);
   return responseModel;
 }

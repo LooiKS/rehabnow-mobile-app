@@ -2,7 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class RehabnowSharedPreferences {
   static SharedPreferences? sharedPreferences;
-  RehabnowSharedPreferences() {}
+  RehabnowSharedPreferences();
 
   bool? get reminder => sharedPreferences!.getBool("reminder");
   set reminder(value) => sharedPreferences!.setBool("reminder", value);
@@ -26,12 +26,4 @@ class RehabnowSharedPreferences {
   String? get rightLegDevice => sharedPreferences!.getString("rightLegDevice");
   set rightLegDevice(value) =>
       sharedPreferences!.setString("rightLegDevice", value);
-
-  // set sharedPreferences(SharedPreferences sharedPreferences) {
-  //   _sharedPreferences = sharedPreferences;
-  // }
-
-  // SharedPreferences get sharedPreferences => _sharedPreferences;
 }
-
-enum DeviceType { LEFT_ARM, RIGHT_ARM, LEFT_LEG, RIGHT_LEG }

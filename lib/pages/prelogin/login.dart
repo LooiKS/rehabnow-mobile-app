@@ -1,12 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rehabnow_app/constants/routes.constant.dart';
-import 'package:rehabnow_app/main.dart';
-import 'package:rehabnow_app/pages/prelogin/main_page.dart';
-import 'package:rehabnow_app/pages/home/reset_password.dart';
 import 'package:rehabnow_app/services/login.http.service.dart';
 import 'package:rehabnow_app/utils/flutter_secure_storage.dart';
-import 'package:rehabnow_app/utils/loading.dart';
+import 'package:rehabnow_app/utils/dialog.dart';
 
 class Login extends StatefulWidget {
   @override
@@ -119,17 +116,17 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                           RaisedButton(
                             color: Colors.blue,
                             onPressed: () {
+                              setState(() {
+                                _errorMessage = null;
+                              });
                               if (_formKey.currentState!.validate()) {
                                 FocusScope.of(context)
                                     .requestFocus(FocusNode());
-                                print(
-                                    "validate ${_emailController.text} ${_passwordController.text}");
                                 showLoadingDialog(context);
 
                                 login(_emailController.text,
                                         _passwordController.text)
                                     .then((value) {
-                                  print(value.status);
                                   Navigator.of(context).pop();
                                   if (value.status == "success") {
                                     RehabnowFlutterSecureStorage.storage.write(
@@ -137,7 +134,6 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                                     Navigator.of(context).pushReplacementNamed(
                                         RoutesConstant.MAIN_PAGE);
                                   } else {
-                                    print(value.errorMessage);
                                     setState(() =>
                                         _errorMessage = value.errorMessage!);
                                   }

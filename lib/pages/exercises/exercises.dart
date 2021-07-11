@@ -1,16 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rehabnow_app/components/not_found_center.dart';
 import 'package:rehabnow_app/components/skeleton.dart';
 import 'package:rehabnow_app/constants/routes.constant.dart';
-import 'package:rehabnow_app/main.dart';
 import 'package:rehabnow_app/models/case.model.dart';
 import 'package:rehabnow_app/models/part.model.dart';
-import 'package:rehabnow_app/pages/cases/view_cases.dart';
-import 'package:rehabnow_app/pages/connection/connection.dart';
-import 'package:rehabnow_app/pages/exercises/game.dart';
-import 'package:rehabnow_app/pages/exercises/skip_the_hurdles.dart';
 import 'package:rehabnow_app/services/case.http.service.dart';
-import 'package:rehabnow_app/utils/loading.dart';
+import 'package:rehabnow_app/utils/dialog.dart';
 import 'package:rehabnow_app/utils/shared_preferences.dart';
 
 class CaseDisplay extends Case {
@@ -34,22 +30,8 @@ class Exercises extends StatefulWidget {
 
 class _ExercisesState extends State<Exercises> {
   ValueNotifier<List<CaseDisplay>?> _cases = ValueNotifier(null);
-  // [
-  //   CaseDisplay(Case("case 1", "", "", "", "", 0, 0)),
-  //   CaseDisplay(Case("case 2", "", "", "", "", 0, 0)),
-  //   CaseDisplay(Case("case 3", "", "", "", "", 0, 0)),
-  // ];
+
   ValueNotifier<List<PartDisplay>?> _parts = ValueNotifier(null);
-  // [
-  //   PartDisplay(Part("Upper Limb", "Left Arm", 0, "", 0, "", 0, 0, []),
-  //       RehabnowSharedPreferences().leftArmDevice),
-  //   PartDisplay(Part("part 2", "Right Arm", 0, "", 0, "", 0, 0, []),
-  //       RehabnowSharedPreferences().rightArmDevice),
-  //   PartDisplay(Part("part 3", "Left Leg", 0, "", 0, "", 0, 0, []),
-  //       RehabnowSharedPreferences().leftLegDevice),
-  //   PartDisplay(Part("part 3", "Right Leg", 0, "", 0, "", 0, 0, []),
-  //       RehabnowSharedPreferences().rightLegDevice),
-  // ];
 
   int _caseSelected = 0;
   int _partSelected = 0;
@@ -136,7 +118,6 @@ class _ExercisesState extends State<Exercises> {
                   )
                 : value.isEmpty
                     ? NotFoundCenter(text: "No case found.")
-                    // Text("No cases under treatment found.")
                     : Column(
                         children: [
                           ...value
