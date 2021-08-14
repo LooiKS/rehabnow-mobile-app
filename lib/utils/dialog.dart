@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 
 Future showLoadingDialog(BuildContext context) {
   return showDialog(
-      barrierDismissible: !false,
-      useRootNavigator: !true,
-      useSafeArea: !true,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      useSafeArea: true,
       context: context,
       builder: (context) => WillPopScope(
             onWillPop: () async => !false,

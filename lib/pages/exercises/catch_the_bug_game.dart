@@ -32,7 +32,7 @@ class CatchTheBug extends StatefulWidget {
 
 class _CatchTheBugState extends State<CatchTheBug> {
   late Timer timer;
-  bool isPaused = false;
+  bool isPaused = false, skippedEnd = false;
   BugState bugState = BugState.UPWARDS;
   double height = 0, width = 0, trashY = 50;
   StreamSubscription<double>? orientationStream;
@@ -113,7 +113,7 @@ class _CatchTheBugState extends State<CatchTheBug> {
 
   void _timerCallback(x) {
     if (!widget.pause && !isPaused) {
-      if (widget.target - widget.oscillation == 0) {
+      if (widget.target - widget.oscillation == 0 && !skippedEnd) {
         isPaused = true;
         widget.onPaused();
 
@@ -123,16 +123,18 @@ class _CatchTheBugState extends State<CatchTheBug> {
             content:
                 "Congratulations! You completed an exercise. Do you still want to continue?",
             confirmCallback: () {
-              Navigator.of(context).pop();
+              setState(() {
+                skippedEnd = true;
+                isPaused = false;
+              });
               widget.onResume();
             },
             cancelCallback: () {
-              Navigator.of(context).pop();
               widget.onSaved();
             });
       } else
         setState(() {
-          posX -= 10;
+          posX -= 3;
           if (posX < 30) {
             posX = width.toInt();
 
@@ -149,11 +151,11 @@ class _CatchTheBugState extends State<CatchTheBug> {
                 break;
             }
 
-            if (posY > height - 30) {
-              posY = height.toInt();
+            if (posY > height - 50) {
+              posY = height.toInt() - 50;
               bugState = BugState.UPWARDS;
-            } else if (posY < 0) {
-              posY = 0;
+            } else if (posY < 50) {
+              posY = 0 + 50;
               bugState = BugState.DOWNWARDS;
             }
           }

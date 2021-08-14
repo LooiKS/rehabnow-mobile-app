@@ -1,4 +1,4 @@
-# rehabnow_app
+# rehabnow
 
 A new Flutter project.
 
@@ -16,6 +16,7 @@ For help getting started with Flutter, view our
 samples, guidance on mobile development, and a full API reference.
 
 Generate APK
+
 ```
 flutter build apk --split-per-abi --no-sound-null-safety
 ```

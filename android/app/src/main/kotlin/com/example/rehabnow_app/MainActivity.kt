@@ -1,4 +1,4 @@
-package com.example.rehabnow_app
+package com.ks.rehabnow
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity

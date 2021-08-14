@@ -11,4 +11,5 @@ class RoutesConstant {
   static const String CONNECTION = "/connection";
   static const String MAIN_PAGE = "/main-page";
   static const String RESET_PASSWORD = "/reset-password";
+  static const String LOGIN = "/login";
 }

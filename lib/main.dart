@@ -149,6 +149,9 @@ class RehabNowApp extends StatelessWidget {
           case RoutesConstant.EDIT_PROFILE:
             page = ProfileEdit(user: args["user"] as User);
             break;
+          case RoutesConstant.LOGIN:
+            page = Login();
+            break;
         }
         return MaterialPageRoute(builder: (context) => page);
       },

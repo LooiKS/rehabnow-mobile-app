@@ -75,7 +75,7 @@ class _SkipTheHurdlesGameState extends State<SkipTheHurdlesGame> {
   double height = 0, width = 0;
   int collide = 0, oscillation = 0;
   StreamSubscription<double>? orientationStream;
-  bool isPaused = false;
+  bool isPaused = false, skippedEnd = false;
 
   @override
   void initState() {
@@ -184,7 +184,7 @@ class _SkipTheHurdlesGameState extends State<SkipTheHurdlesGame> {
     VirtualRect bird = VirtualRect(birdX, birdY, 50, 50);
 
     if (!widget.pause && !isPaused) {
-      if (widget.target - widget.oscillation == 0) {
+      if (widget.target - widget.oscillation == 0 && !skippedEnd) {
         isPaused = true;
         widget.onPaused();
         showAlertDialog(
@@ -193,10 +193,13 @@ class _SkipTheHurdlesGameState extends State<SkipTheHurdlesGame> {
             content:
                 "Congratulations! You completed an exercise. Do you still want to continue?",
             confirmCallback: () {
+              setState(() {
+                skippedEnd = true;
+                isPaused = false;
+              });
               widget.onResume();
             },
             cancelCallback: () {
-              Navigator.of(context).pop();
               widget.onSaved();
             });
       } else {

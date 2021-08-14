@@ -76,7 +76,7 @@ class _MainPageState extends State<MainPage> {
           callback: () {
             logout().then((value) {
               Navigator.pop(context);
-              Navigator.of(context).pushReplacementNamed(RoutesConstant.HOME);
+              Navigator.of(context).pushReplacementNamed(RoutesConstant.LOGIN);
             });
           })
     ];
